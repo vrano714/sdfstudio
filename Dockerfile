@@ -1,5 +1,6 @@
 # Define base image.
-FROM nvidia/cudagl:11.3.1-devel
+# FROM nvidia/cudagl:11.3.1-devel
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04
 
 # Set environment variables.
 ## Set non-interactive to prevent asking for user inputs blocking image creation.
@@ -39,7 +40,11 @@ RUN apt-get update && \
     python3.8-dev \
     python3-pip \
     qtbase5-dev \
-    wget
+    wget \
+    curl \
+    libflann1.9 libflann-dev \
+    sqlite3 libsqlite3-0 libssqlite3-dev \
+    libpython3.10 libpython3.10-dev
 
 # Install GLOG (required by ceres).
 RUN git clone --branch v0.6.0 https://github.com/google/glog.git --single-branch && \
@@ -67,11 +72,11 @@ RUN git clone --branch 2.1.0 https://ceres-solver.googlesource.com/ceres-solver.
     rm -r ceres-solver
 
 # Install colmap.
-RUN git clone --branch 3.7 https://github.com/colmap/colmap.git --single-branch && \
+RUN git clone --branch 3.8 https://github.com/colmap/colmap.git --single-branch && \
     cd colmap && \
     mkdir build && \
     cd build && \
-    cmake .. && \
+    cmake .. -DCMAKE_CUDA_ARCHITECTURES=86 && \
     make -j && \
     make install && \
     cd ../.. && \
@@ -89,11 +94,11 @@ ENV PATH="${PATH}:/home/user/.local/bin"
 SHELL ["/bin/bash", "-c"]
 
 # Upgrade pip and install packages.
-RUN python3.8 -m pip install --upgrade pip setuptools pathtools promise
+RUN python3.10 -m pip install --upgrade pip setuptools pathtools promise
 # Install pytorch and submodules.
-RUN python3.8 -m pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
+RUN python3.10 -m pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
 # Install tynyCUDNN.
-RUN python3.8 -m pip install git+https://github.com/NVlabs/tiny-cuda-nn.git#subdirectory=bindings/torch
+RUN python3.10 -m pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn.git#subdirectory=bindings/torch
 
 # Copy nerfstudio folder and give ownership to user.
 ADD . /home/user/nerfstudio
@@ -103,7 +108,7 @@ USER 1000:1000
 
 # Install nerfstudio dependencies.
 RUN cd nerfstudio && \
-    python3.8 -m pip install -e . && \
+    python3.10 -m pip install -e . && \
     cd ..
 
 # Change working directory
