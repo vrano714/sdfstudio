@@ -1,3 +1,43 @@
+# Fork notes
+
+- this fork is to build Docker image which can run sdfstudio normally (as of 2024-05-01)
+  - original sdfstudio Dockerfile passes the build, but sdfstudio does not run due to pymeshlab Qt deps (in nerfstudio)
+- Dockerfile in this repo has several (hasty) changes to build deps and run `ns-` commands
+  - changed base image with ubuntu 22.04 (to avoid Qt deps error)
+  - changed colmap version to 3.8 (3.7 had some error on build) and added apt deps related to this
+  - changed python version to 3.10 (ubuntu 22.04 default python version)
+  - added ninja installation along with tinycudann (to keep up with current nerfstudio installation process)
+  - added `curl` on apt install (to run `ns-download-data`)
+
+You may build image like:
+
+```bash
+docker build -t sdfstudio .
+```
+
+You may run a container like:
+
+```bash
+docker run -it --gpus all -p 7007:7007 -v /your/host/path/for/data/sharing:/somewhere sdfstudio:latest bash
+```
+
+Note that `-v` is for host-container data sharing and you have to write your own setting.
+
+In the container, you can run `ns-` commands (I only tested `ns-download-data` and `ns-train`).
+
+---
+
+When viewer is running, and if your machine is remote, you may also run a port forwarding in another terminal to use web viewer:
+
+```bash
+ssh -L 7007:you@remotemachine:7007 you@remotemachine
+```
+
+As long as I try, when running training in a remote machine, the link on the terminal (`https://viewer.nerf.studio/versions/23-03-9-0/?websocket_url=ws://localhost:7007`) did not work well, even replacing localhost with the IP address.
+But if you run port forwarding above, your local machine's local 7007 should be connected to remote machine's 7007 and no problem will happen.
+
+---
+
 <p align="center">
     <img alt="nerfstudio" src="media/sdf_studio_4.png" width="300">
     <h1 align="center">A Unified Framework for Surface Reconstruction</h1>
@@ -91,7 +131,7 @@ Navigating to the link at the end of the terminal will load the webviewer (devel
 It is also possible to load a pretrained model by running
 
 ```bash
-ns-train neus-facto --trainer.load-dir {outputs/neus-facto-dtu65/neus-facto/XXX/sdfstudio_models} sdfstudio-data --data data/sdfstudio-demo-data/dtu-scan65 
+ns-train neus-facto --trainer.load-dir {outputs/neus-facto-dtu65/neus-facto/XXX/sdfstudio_models} sdfstudio-data --data data/sdfstudio-demo-data/dtu-scan65
 ```
 
 This will automatically resume training. If you do not want to resume training, add `--viewer.start-train False` to your training command. **Note that the order of command matters, dataparser subcommand needs to come after the model subcommand.**
@@ -213,7 +253,7 @@ If you use this library or find the documentation useful for your research, plea
 
 ```bibtex
 @misc{Yu2022SDFStudio,
-    author    = {Yu, Zehao and Chen, Anpei and Antic, Bozidar and Peng, Songyou and Bhattacharyya, Apratim 
+    author    = {Yu, Zehao and Chen, Anpei and Antic, Bozidar and Peng, Songyou and Bhattacharyya, Apratim
                  and Niemeyer, Michael and Tang, Siyu and Sattler, Torsten and Geiger, Andreas},
     title     = {SDFStudio: A Unified Framework for Surface Reconstruction},
     year      = {2022},
